@@ -7,33 +7,29 @@ function usage() {
 
 function commitDirName() {
     local commitHash="$1"
-    local commitDate=$(git show -s --format%cd --date=format:%Y-%m-%d "$commitHash")
-    local commitMsg=$(git show -s --format%s "$commitHash")
+    local commitDate=$(git show -s --format=%cd --date=format:%Y-%m-%d "$commitHash")
+    local commitMsg=$(git show -s --format=%s "$commitHash")
     local commitType=$(echo "$commitMsg" | grep -o -E '^(fix|feat|chore):' | tr '[:upper:]' '[:lower:]' || echo "fix:")
     # custom name generations
-    local commitMsgClean$(echo "$commitMsg" |
-        sed -E 's/^(fix|feat|chore)://i' |
-        tr -d '[:punct:]' |
-        tr -d ' '
-    )
+    local commitMsgClean=$(echo "$commitMsg" | sed -E 's/^(fix|feat|chore)://i' | tr -d '[:punct:]' | tr -d ' ')
 
-    echo  "$outputDir/${commitDate}_${commitType}(${commitMsgClean}_${commitHash:0:7})"
+    echo "$outputDir/${commitDate}_${commitType}(${commitMsgClean}_${commitHash:0:7})"
 }
 
 function processCommit() {
   local commitHash="$1"
   local commitDate=$(git show -s --format=%cd "$commitHash")
   local commitMsg=$(git show -s --format=%B "$commitHash")
-  local commitDir=$(commitDirName $commitHash)
+  local commitDir=$(commitDirName "$commitHash")
 
-  mkdir -p "$CommitDir"
+  mkdir -p "$commitDir"
 
   echo "## Commit $commitHash - $commitDate" >> "$summaryFile"
   echo "" >> "$summaryFile"
   echo "\`\`\`" >> "$summaryFile"
   echo "$commitMsg" >> "$summaryFile"
   echo "\`\`\`" >> "$summaryFile"
-  echo "" >> summaryFile
+  echo "" >> "$summaryFile"
 
   echo "### Changed Files" >> "$summaryFile"
   echo "" >> "$summaryFile"
@@ -72,14 +68,14 @@ outputDir="$2"
 MAX_FILE_SIZE=${3:-1000} # default 1MB
 
 mkdir -p "$outputDir"
-summaryFile="$outputDir/commit_sumary.md"
+summaryFile="$outputDir/commit_summary.md"
 
 echo "# Git Commit History for $author" > "$summaryFile"
 echo "Generated on $(date)" >> "$summaryFile"
 echo "" > "$summaryFile"
 
 git log --author="$author" --pretty=format:"%h" | while read -r commitHash; do
-    processCommit "$commitMsg"
+    processCommit "$commitHash"
 done
 
-echo  "Status: Completed! Check ./$outputDir"
+echo "Status: Completed! Check $outputDir"
